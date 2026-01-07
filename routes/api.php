@@ -6,6 +6,10 @@ use App\Http\Controllers\Api\RoutineController;
 use App\Http\Controllers\Api\UserSettingController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok']);
+});
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', MeController::class);
 

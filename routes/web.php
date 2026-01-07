@@ -7,10 +7,18 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// SPA の preflight が 302 にならないように明示的に許可する。
+Route::options('/login', fn () => response()->noContent());
+Route::options('/logout', fn () => response()->noContent());
+Route::options('/register', fn () => response()->noContent());
+
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])
-    ->middleware('guest')
     ->name('login');
 
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
+
+// SPA 向けの最小登録。登録後はセッションを作ってそのまま認証済みにする。
+Route::post('/register', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'store'])
+    ->name('register');

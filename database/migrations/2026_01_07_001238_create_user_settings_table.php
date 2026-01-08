@@ -23,8 +23,6 @@ return new class extends Migration
             $table->boolean('show_remaining_tasks')->default(false);
             // 経過時間表示
             $table->boolean('show_elapsed_time')->default(false);
-            // タスク目安時間の表示
-            $table->boolean('enable_task_estimated_time')->default(false);
             // 完了演出の表示
             $table->boolean('show_celebration')->default(false);
             $table->timestamps();

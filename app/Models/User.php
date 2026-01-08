@@ -47,6 +47,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean', // 管理者フラグをboolean型として扱う
+            'tutorial_dismissed_at' => 'datetime', // チュートリアル非表示日時
         ];
     }
 

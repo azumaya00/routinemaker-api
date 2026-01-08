@@ -21,7 +21,6 @@ class UserSettingFactory extends Factory
             'dark_mode' => 'system',
             'show_remaining_tasks' => false,
             'show_elapsed_time' => false,
-            'enable_task_estimated_time' => false,
             'show_celebration' => false,
         ];
     }

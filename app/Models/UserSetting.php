@@ -15,7 +15,6 @@ class UserSetting extends Model
         'dark_mode',
         'show_remaining_tasks',
         'show_elapsed_time',
-        'enable_task_estimated_time',
         'show_celebration',
     ];
 
@@ -23,7 +22,6 @@ class UserSetting extends Model
     protected $casts = [
         'show_remaining_tasks' => 'boolean',
         'show_elapsed_time' => 'boolean',
-        'enable_task_estimated_time' => 'boolean',
         'show_celebration' => 'boolean',
     ];
 

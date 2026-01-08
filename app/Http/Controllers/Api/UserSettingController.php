@@ -27,7 +27,6 @@ class UserSettingController extends Controller
             'dark_mode' => ['sometimes', 'in:off,on,system'],
             'show_remaining_tasks' => ['sometimes', 'boolean'],
             'show_elapsed_time' => ['sometimes', 'boolean'],
-            'enable_task_estimated_time' => ['sometimes', 'boolean'],
             'show_celebration' => ['sometimes', 'boolean'],
         ]);
 
@@ -47,7 +46,6 @@ class UserSettingController extends Controller
             'dark_mode' => 'system',
             'show_remaining_tasks' => false,
             'show_elapsed_time' => false,
-            'enable_task_estimated_time' => false,
             'show_celebration' => false,
         ]);
     }

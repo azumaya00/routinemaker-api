@@ -17,13 +17,21 @@ class MeController extends Controller
             'dark_mode' => 'system',
             'show_remaining_tasks' => false,
             'show_elapsed_time' => false,
-            'enable_task_estimated_time' => false,
             'show_celebration' => false,
         ]);
 
+        // チュートリアル表示判定: tutorial_dismissed_at が NULL なら表示対象
+        $tutorialShouldShow = $user->tutorial_dismissed_at === null;
+
         return response()->json([
             'data' => [
-                'user' => $user->only(['id', 'name', 'email', 'plan', 'is_admin']),
+                'user' => array_merge(
+                    $user->only(['id', 'name', 'email', 'plan', 'is_admin']),
+                    [
+                        'tutorial_dismissed_at' => $user->tutorial_dismissed_at?->toIso8601String(),
+                        'tutorial_should_show' => $tutorialShouldShow,
+                    ]
+                ),
                 'plan' => $user->plan,
                 'settings' => $settings,
             ],

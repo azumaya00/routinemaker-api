@@ -23,11 +23,23 @@ class RoutineController extends Controller
 
     public function store(Request $request)
     {
+        $user = $request->user();
+
+        // freeユーザーの場合、既存のルーティン数をチェック（10件制限）
+        if ($user->plan === 'free') {
+            $existingCount = Routine::where('user_id', $user->id)->count();
+            if ($existingCount >= 10) {
+                return response()->json([
+                    'message' => '無料プランではタスクリストは10件までです。',
+                ], 422);
+            }
+        }
+
         // ルーティン作成（プラン制限もここで検証）
         $validated = $this->validateRoutine($request, false);
 
         $routine = Routine::create([
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'title' => $validated['title'],
             'tasks' => $validated['tasks'],
         ]);

@@ -20,6 +20,16 @@ class RegisteredUserController extends Controller
                 'confirmed',
                 Password::min(8)->letters()->numbers(),
             ],
+        ], [
+            // カスタムエラーメッセージ（日本語）
+            'email.required' => 'メールアドレスは必須です。',
+            'email.email' => '有効なメールアドレスを入力してください。',
+            'email.unique' => 'このメールアドレスは既に登録されています。',
+            'password.required' => 'パスワードは必須です。',
+            'password.confirmed' => 'パスワードが一致しません。',
+            'password.min' => 'パスワードは8文字以上である必要があります。',
+            'password.letters' => 'パスワードには英字が含まれている必要があります。',
+            'password.numbers' => 'パスワードには数字が含まれている必要があります。',
         ]);
 
         // 登録時点ではプロフィール入力をしない前提のため、名前は仮で用意する。

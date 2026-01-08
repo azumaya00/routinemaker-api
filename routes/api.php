@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\HistoryController;
 use App\Http\Controllers\Api\HistoriesController;
 use App\Http\Controllers\Api\MeController;
 use App\Http\Controllers\Api\RoutineController;
+use App\Http\Controllers\Api\TutorialDismissController;
 use App\Http\Controllers\Api\UserSettingController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +18,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', MeController::class);
     // SPA ログアウトは API 側で完結させ、redirect を避ける。
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy']);
+
+    // チュートリアル非表示API
+    Route::post('/tutorial/dismiss', TutorialDismissController::class);
 
     Route::get('/routines', [RoutineController::class, 'index']);
     Route::post('/routines', [RoutineController::class, 'store']);

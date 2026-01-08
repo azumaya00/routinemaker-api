@@ -6,9 +6,13 @@ return [
 
     'allowed_methods' => ['*'],
 
+    // 本番環境では CORS_ALLOWED_ORIGINS を明示的に設定する必要がある
+    // local では localhost:3000 を許可、production では本番ドメインのみ許可
     'allowed_origins' => array_filter(array_map(
         static fn (string $origin): string => trim($origin),
-        explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:3000'))
+        explode(',', env('CORS_ALLOWED_ORIGINS', env('APP_ENV') === 'production' 
+            ? 'https://routinemaker.yuru-labo.com' 
+            : 'http://localhost:3000'))
     )),
 
     'allowed_origins_patterns' => [],

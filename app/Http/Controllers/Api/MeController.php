@@ -23,7 +23,7 @@ class MeController extends Controller
 
         return response()->json([
             'data' => [
-                'user' => $user->only(['id', 'name', 'email', 'plan']),
+                'user' => $user->only(['id', 'name', 'email', 'plan', 'is_admin']),
                 'plan' => $user->plan,
                 'settings' => $settings,
             ],

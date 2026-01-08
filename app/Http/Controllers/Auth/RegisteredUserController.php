@@ -23,10 +23,12 @@ class RegisteredUserController extends Controller
         ]);
 
         // 登録時点ではプロフィール入力をしない前提のため、名前は仮で用意する。
+        // 新規登録時は必ず is_admin=false を保証（外部入力から変更できないようにする）
         $user = User::create([
             'name' => strtok($validated['email'], '@') ?: 'User',
             'email' => $validated['email'],
             'password' => $validated['password'],
+            'is_admin' => false, // 新規登録時は必ずfalse（念のため明示的に設定）
         ]);
 
         // SPA の登録直後にログイン済みで扱えるよう、セッションを作成する。

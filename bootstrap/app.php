@@ -18,6 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // api だけだと web ルートの preflight が弾かれ、ブラウザ側でブロックされる。
         $middleware->append(HandleCors::class);
         $middleware->statefulApi();
+        
+        // 管理者専用Middlewareのエイリアスを登録
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\EnsureAdmin::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

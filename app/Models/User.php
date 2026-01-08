@@ -23,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'plan',
+        // is_admin は fillable に含めない（外部入力から変更できないようにする）
     ];
 
     /**
@@ -45,6 +46,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean', // 管理者フラグをboolean型として扱う
         ];
     }
 

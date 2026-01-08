@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\HistoryController;
 use App\Http\Controllers\Api\HistoriesController;
 use App\Http\Controllers\Api\MeController;
@@ -31,4 +32,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/settings', [UserSettingController::class, 'show']);
     Route::patch('/settings', [UserSettingController::class, 'update']);
+
+    // 管理者専用ルート
+    // 動作確認用の最小限のエンドポイント
+    // 本番環境で公開したくない場合は、.env で無効化することを推奨
+    Route::middleware('admin')->group(function () {
+        Route::get('/admin/ping', [AdminController::class, 'ping']);
+    });
 });

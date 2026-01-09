@@ -8,11 +8,17 @@ use App\Http\Controllers\Api\RoutineController;
 use App\Http\Controllers\Api\TutorialDismissController;
 use App\Http\Controllers\Api\UserSettingController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
 });
+
+// パスワードリセット（認証不要）
+Route::post('/forgot-password', [ForgotPasswordController::class, 'store']);
+Route::post('/reset-password', [ResetPasswordController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', MeController::class);

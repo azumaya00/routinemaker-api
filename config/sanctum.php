@@ -15,13 +15,17 @@ return [
     |
     */
 
+    // 本番環境では SANCTUM_STATEFUL_DOMAINS を明示的に設定する必要がある
+    // local では localhost 系を許可、production では本番ドメインのみ許可
     'stateful' => array_filter(array_map('trim', explode(',', env(
         'SANCTUM_STATEFUL_DOMAINS',
-        sprintf(
-            '%s,%s',
-            'localhost,localhost:3000,127.0.0.1,127.0.0.1:3000,::1',
-            Sanctum::currentApplicationUrlWithPort(),
-        )
+        env('APP_ENV') === 'production'
+            ? 'routinemaker.yuru-labo.com'
+            : sprintf(
+                '%s,%s',
+                'localhost,localhost:3000,127.0.0.1,127.0.0.1:3000,::1',
+                Sanctum::currentApplicationUrlWithPort(),
+            )
     )))),
 
     /*

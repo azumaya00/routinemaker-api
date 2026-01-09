@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rules\Password as PasswordRule;
+use Illuminate\Support\Facades\Hash;
 
 class ResetPasswordController extends Controller
 {
@@ -35,9 +36,14 @@ class ResetPasswordController extends Controller
 
         // パスワードリセットを実行
         $status = Password::reset(
-            $validated,
+            $request->only(
+                'email',
+                'password',
+                'password_confirmation',
+                'token'
+            ),
             function ($user, $password) {
-                $user->password = $password;
+                $user->password = Hash::make($password);
                 $user->save();
             }
         );

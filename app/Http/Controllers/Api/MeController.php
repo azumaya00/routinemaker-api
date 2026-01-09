@@ -49,18 +49,29 @@ class MeController extends Controller
     {
         $user = $request->user();
 
-        // パスワード再入力を必須にする
-        $validated = $request->validate([
-            'password' => ['required', 'string'],
-        ], [
-            'password.required' => 'パスワードは必須です。',
-        ]);
+        $expectsPassword = $user->password !== null;
 
-        // パスワードが一致しない場合は422を返す
-        if (!Hash::check($validated['password'], $user->password)) {
-            return response()->json([
-                'message' => 'パスワードが一致しません。',
-            ], 422);
+        if ($expectsPassword) {
+            // パスワードを持つユーザーは従来どおり再入力必須
+            $validated = $request->validate([
+                'password' => ['required', 'string'],
+            ], [
+                'password.required' => 'パスワードは必須です。',
+            ]);
+
+            // パスワードが一致しない場合は422を返す（従来仕様を維持）
+            if (!Hash::check($validated['password'], $user->password)) {
+                return response()->json([
+                    'message' => 'パスワードが一致しません。',
+                    'errors' => ['password' => ['パスワードが一致しません。']],
+                ], 422);
+            }
+        } else {
+            // ソーシャルログイン（password null）は直近ログイン済みをもって本人確認とする
+            $request->validate([
+                'password' => ['nullable', 'string'],
+            ]);
+            // password があっても無視して通す（再認証導線は作らない）
         }
 
         // 論理削除を実行（SoftDeletes）

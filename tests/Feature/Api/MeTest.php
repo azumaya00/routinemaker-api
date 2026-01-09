@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Models\User;
 use App\Models\UserSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -72,5 +73,60 @@ class MeTest extends TestCase
                     ],
                 ],
             ]);
+    }
+
+    /**
+     * アカウント削除の正常系テスト
+     * パスワードが一致する場合、論理削除が実行され、退会後に /api/me が 401 になる
+     */
+    public function test_delete_account_success_with_correct_password(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('password123'),
+        ]);
+
+        Sanctum::actingAs($user);
+
+        // アカウント削除を実行
+        $response = $this->deleteJson('/api/me', [
+            'password' => 'password123',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'アカウントを削除しました。');
+
+        // 論理削除されていることを確認
+        $this->assertSoftDeleted('users', [
+            'id' => $user->id,
+        ]);
+
+        // 退会後に /api/me が 401 になることを確認
+        $this->getJson('/api/me')->assertStatus(401);
+    }
+
+    /**
+     * アカウント削除の異常系テスト
+     * パスワードが不一致の場合、422 を返す
+     */
+    public function test_delete_account_fails_with_incorrect_password(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('password123'),
+        ]);
+
+        Sanctum::actingAs($user);
+
+        // 間違ったパスワードでアカウント削除を試行
+        $response = $this->deleteJson('/api/me', [
+            'password' => 'wrongpassword',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('message', 'パスワードが一致しません。');
+
+        // ユーザーが削除されていないことを確認
+        $this->assertNotSoftDeleted('users', [
+            'id' => $user->id,
+        ]);
     }
 }

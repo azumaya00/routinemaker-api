@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class MeController extends Controller
 {
@@ -36,5 +38,46 @@ class MeController extends Controller
                 'settings' => $settings,
             ],
         ]);
+    }
+
+    /**
+     * アカウント削除（退会）
+     * 
+     * パスワード再入力必須で論理削除を実行
+     */
+    public function destroy(Request $request)
+    {
+        $user = $request->user();
+
+        // パスワード再入力を必須にする
+        $validated = $request->validate([
+            'password' => ['required', 'string'],
+        ], [
+            'password.required' => 'パスワードは必須です。',
+        ]);
+
+        // パスワードが一致しない場合は422を返す
+        if (!Hash::check($validated['password'], $user->password)) {
+            return response()->json([
+                'message' => 'パスワードが一致しません。',
+            ], 422);
+        }
+
+        // 論理削除を実行（SoftDeletes）
+        $user->delete();
+
+        // ログアウト処理
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        // セッション cookie の名称差分に備えて、複数パターンを明示的に削除する。
+        $sessionCookie = config('session.cookie');
+        return response()
+            ->noContent()
+            ->withCookie(cookie()->forget($sessionCookie))
+            ->withCookie(cookie()->forget('laravel_session'))
+            ->withCookie(cookie()->forget('laravel-session'))
+            ->withCookie(cookie()->forget('XSRF-TOKEN'));
     }
 }

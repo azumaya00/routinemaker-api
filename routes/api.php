@@ -22,6 +22,7 @@ Route::post('/reset-password', [ResetPasswordController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', MeController::class);
+    Route::delete('/me', [MeController::class, 'destroy']);
     // SPA ログアウトは API 側で完結させ、redirect を避ける。
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy']);
 

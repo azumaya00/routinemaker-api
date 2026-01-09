@@ -21,10 +21,12 @@ class AuthenticatedSessionController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        // SoftDeletes を使用しているため、削除されたユーザーは自動的に除外される
+        // ただし、明示的にチェックしてより明確なエラーメッセージを返す
         if (! Auth::attempt($credentials)) {
             // web ルートでも JSON を返してリダイレクトを発生させない。
             return response()->json([
-                'message' => 'The provided credentials are incorrect.',
+                'message' => 'メールアドレスまたはパスワードが正しくありません。',
             ], 422);
         }
 

@@ -13,10 +13,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('user_settings', function (Blueprint $table) {
-            // enable_task_estimated_time カラムを削除
-            $table->dropColumn('enable_task_estimated_time');
-        });
+        // カラムが存在する場合のみ削除（既存DB / 空DB どちらでも安全に動作）
+        if (Schema::hasColumn('user_settings', 'enable_task_estimated_time')) {
+            Schema::table('user_settings', function (Blueprint $table) {
+                $table->dropColumn('enable_task_estimated_time');
+            });
+        }
     }
 
     /**
@@ -26,9 +28,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('user_settings', function (Blueprint $table) {
-            // カラムを復元（デフォルト値は false）
-            $table->boolean('enable_task_estimated_time')->default(false)->after('show_elapsed_time');
-        });
+        // カラムが存在しない場合のみ追加（重複エラーを防ぐ）
+        if (!Schema::hasColumn('user_settings', 'enable_task_estimated_time')) {
+            Schema::table('user_settings', function (Blueprint $table) {
+                // カラムを復元（デフォルト値は false）
+                $table->boolean('enable_task_estimated_time')->default(false)->after('show_elapsed_time');
+            });
+        }
     }
 };

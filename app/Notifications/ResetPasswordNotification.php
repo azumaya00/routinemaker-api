@@ -7,7 +7,7 @@ use Illuminate\Notifications\Messages\MailMessage;
 
 class ResetPasswordNotification extends BaseResetPassword
 {
-    public function toMail(object $notifiable): MailMessage
+    public function toMail($notifiable)
     {
         $frontendUrl = rtrim((string) config('app.frontend_url'), '/');
         $query = http_build_query([

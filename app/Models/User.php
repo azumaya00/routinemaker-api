@@ -25,6 +25,8 @@ class User extends Authenticatable
         'email',
         'password',
         'plan',
+        'provider', // ソーシャルログインの種別（google など）
+        'provider_id', // ソーシャルログインのユーザーID
         // is_admin は fillable に含めない（外部入力から変更できないようにする）
     ];
 

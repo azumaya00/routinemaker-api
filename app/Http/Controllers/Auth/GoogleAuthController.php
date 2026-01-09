@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 
 class GoogleAuthController extends Controller
@@ -40,39 +41,81 @@ class GoogleAuthController extends Controller
             ], 422);
         }
 
-        $user = User::withTrashed()->where('email', $email)->first();
+        $googleId = $googleUser->getId();
+        $googleName = $googleUser->getName() ?: strtok($email, '@') ?: 'User';
+
+        // A: provider + provider_id で復元を優先
+        $user = User::withTrashed()
+            ->where('provider', 'google')
+            ->where('provider_id', $googleId)
+            ->first();
 
         if ($user) {
-            // 論理削除済みなら復元する。
+            $restored = false;
             if ($user->trashed()) {
                 $user->restore();
+                $restored = true;
             }
-
-            // 名前が未設定の場合のみ Google の名前を採用する。
-            if (! $user->name) {
-                $user->name = $googleUser->getName() ?: strtok($email, '@') ?: 'User';
-            }
-
-            // provider 情報が未設定の場合のみ保存する（既存設定は尊重）。
-            if (! $user->provider) {
-                $user->provider = 'google';
-            }
-            if (! $user->provider_id) {
-                $user->provider_id = $googleUser->getId();
-            }
-
+            // 退会復活時は初期プランに戻す
+            $user->plan = 'free';
+            // ずれがあれば現在のGoogle情報で更新
+            $user->provider = 'google';
+            $user->provider_id = $googleId;
+            $user->email = $email;
+            $user->name = $googleName;
             $user->save();
+
+            if ($restored) {
+                // 復元発生時のみログを出す（本番でも邪魔にならない情報レベル）
+                Log::info('Google login restore by provider_id', [
+                    'user_id' => $user->id,
+                    'provider_id' => $googleId,
+                ]);
+            }
         } else {
-            // 新規ユーザーを作成する。パスワードは Google 認証のみで扱うため null。
-            $user = User::create([
-                'name' => $googleUser->getName() ?: strtok($email, '@') ?: 'User',
-                'email' => $email,
-                'password' => null,
-                'plan' => 'free', // 既存仕様と同じ初期プラン
-                'provider' => 'google',
-                'provider_id' => $googleUser->getId(),
-                // is_admin は fillable ではないため、デフォルト false が使われる
-            ]);
+            // B: email で withTrashed を確認
+            $userByEmail = User::withTrashed()->where('email', $email)->first();
+            if ($userByEmail) {
+                if (! $userByEmail->trashed()) {
+                    // 生存中の別アカウントと衝突する場合は拒否
+                    return response()->json([
+                        'message' => 'このメールアドレスは既に別のアカウントで利用されています。',
+                    ], 422);
+                }
+
+                // 退会済みで provider=google の場合のみ復元を許可
+                if ($userByEmail->provider === 'google') {
+                    $userByEmail->restore();
+                    $userByEmail->plan = 'free'; // 初期プランに戻す
+                    $userByEmail->provider = 'google';
+                    $userByEmail->provider_id = $googleId; // GoogleのIDで上書き
+                    $userByEmail->name = $googleName;
+                    $userByEmail->save();
+
+                    Log::info('Google login restore by email', [
+                        'user_id' => $userByEmail->id,
+                        'provider_id' => $googleId,
+                    ]);
+
+                    $user = $userByEmail;
+                } else {
+                    // Google以外の方法で退会したメールは復活させない
+                    return response()->json([
+                        'message' => 'このメールアドレスは別の認証方法で登録されています。',
+                    ], 422);
+                }
+            } else {
+                // C: 該当なしの場合は新規作成
+                $user = User::create([
+                    'name' => $googleName,
+                    'email' => $email,
+                    'password' => null,
+                    'plan' => 'free', // 既存仕様と同じ初期プラン
+                    'provider' => 'google',
+                    'provider_id' => $googleId,
+                    // is_admin は fillable ではないため、デフォルト false が使われる
+                ]);
+            }
         }
 
         // 既存のメール/パスワードと同じ挙動でセッションを確立する。

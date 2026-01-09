@@ -30,6 +30,9 @@ class MeController extends Controller
                 'user' => array_merge(
                     $user->only(['id', 'name', 'email', 'plan', 'is_admin']),
                     [
+                        // フロント側で退会UIを出し分けるための情報
+                        'has_password' => $user->password !== null,
+                        'provider' => $user->provider,
                         'tutorial_dismissed_at' => $user->tutorial_dismissed_at?->toIso8601String(),
                         'tutorial_should_show' => $tutorialShouldShow,
                     ]

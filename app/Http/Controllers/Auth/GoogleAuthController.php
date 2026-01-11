@@ -56,8 +56,10 @@ class GoogleAuthController extends Controller
                 $user->restore();
                 $restored = true;
             }
-            // 退会復活時は初期プランに戻す
-            $user->plan = 'free';
+            // 退会復活時のみ初期プランに戻す（通常ログイン時は plan を保持）
+            if ($restored) {
+                $user->plan = 'free';
+            }
             // ずれがあれば現在のGoogle情報で更新
             $user->provider = 'google';
             $user->provider_id = $googleId;

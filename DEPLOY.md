@@ -7,9 +7,9 @@
 | 項目 | 値 |
 |---|---|
 | サーバー | mixhost（cPanel / LiteSpeed）、ホームは `/home/anwwtear` |
-| アプリ | `/home/anwwtear/public_html/routinemaker-api.yuru-labo.com/app`（GitHub の public リポジトリを HTTPS で clone したもの） |
-| ドキュメントルート | `app/public` |
-| PHP | Web は ea-php84（cPanel の MultiPHP マネージャーで設定し、`app/public/.htaccess` に反映される）、CLI も 8.4 |
+| アプリ | `/home/anwwtear/apps/routinemaker-api`（GitHub の public リポジトリを HTTPS で clone したもの。public_html の外） |
+| ドキュメントルート | cPanel の設定は `public_html/routinemaker-api.yuru-labo.com/app/public`。これは `/home/anwwtear/apps/routinemaker-api/public` へのシンボリックリンク |
+| PHP | Web は ea-php84（cPanel の MultiPHP マネージャーで設定し、`public/.htaccess` に反映される）、CLI も 8.4 |
 | composer | `composer`（`/usr/local/bin/composer`） |
 
 サーバー上で変更していて、Git にはないもの（消さないこと）:
@@ -30,7 +30,7 @@
 ## 2. デプロイ（サーバー）
 
 ```bash
-cd /home/anwwtear/public_html/routinemaker-api.yuru-labo.com/app
+cd /home/anwwtear/apps/routinemaker-api
 ```
 
 2-1. 状態を確認する。上の「サーバー上で変更していて、Git にはないもの」以外が出たら止まる。
@@ -85,7 +85,7 @@ tail -n 50 storage/logs/laravel.log
 ## 4. ロールバック
 
 ```bash
-cd /home/anwwtear/public_html/routinemaker-api.yuru-labo.com/app && git checkout "$(cat ~/routinemaker-api.prev)"
+cd /home/anwwtear/apps/routinemaker-api && git checkout "$(cat ~/routinemaker-api.prev)"
 ```
 
 ```bash
@@ -98,12 +98,12 @@ composer install --no-dev --optimize-autoloader --no-interaction && php artisan 
 ## 5. `.env` を変えたとき（秘密情報の再発行を含む）
 
 ```bash
-cd /home/anwwtear/public_html/routinemaker-api.yuru-labo.com/app && chmod 600 .env && php artisan config:cache
+cd /home/anwwtear/apps/routinemaker-api && chmod 600 .env && php artisan config:cache
 ```
 
 - `.env` の値はチャットやログに出さないでください。確認はキー名だけで行います（`cut -d= -f1 .env`）。
 - `APP_KEY` を変えると、全ユーザーが一度ログアウトされます。`APP_PREVIOUS_KEYS` に旧キーは入れません。
-- `.env` のコピーを `app/` の中に作らないでください（`scp` は手元の Mac で実行します）。
+- `.env` のコピーを public_html の中に作らないでください（`scp` は手元の Mac で実行します）。
 
 ## 6. PHP のバージョンを変えるとき
 
@@ -111,8 +111,13 @@ cPanel の「MultiPHP マネージャー」で、`routinemaker-api.yuru-labo.com
 
 ## 任意: mode change を表示しないようにする
 
-`git status` に権限変更が出ないようにするには、サーバーの `app/` で一度だけ次を実行します（このリポジトリにだけ効きます）。
+`git status` に権限変更が出ないようにするには、サーバーの `/home/anwwtear/apps/routinemaker-api` で一度だけ次を実行します（このリポジトリにだけ効きます）。
 
 ```bash
 git config core.fileMode false
 ```
+
+## 配置について（触らないこと）
+
+- `public_html/routinemaker-api.yuru-labo.com/app/` には、`public` へのシンボリックリンクしか置かない（フォルダは 711）。アプリ本体を public_html に戻さないでください。
+- `/home/anwwtear/apps/routinemaker-api` と、その中の `public` は `anwwtear:nobody` の 750 です。Web サーバーは `nobody` グループとしてたどるので、この 2 つを作り直したりコピーで置き換えたりしないでください（一般ユーザーは `chgrp nobody` ができません）。

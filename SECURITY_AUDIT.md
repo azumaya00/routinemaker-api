@@ -43,10 +43,11 @@
 - 悪用条件: 退会済みユーザーのメールアドレスを知っていること。メールの受信は不要。旧データ、プラン、`is_admin` をそのまま引き継げる。
 - 補足: リポジトリが public なので、この挙動は誰でも読める状態だった。
 
-### H-1 `app/` が public_html の中にある（High / 緩和済み・恒久対応は未対応）
+### H-1 `app/` が public_html の中にあった（High / 対応済み）
 - 内容: ドキュメントルートは `app/public` だが、`app/` 自体が public_html の中にある。songofwhisper.com のホスト経由で `app/` 配下のファイルに届く。
 - 影響: `.env` 系は 403（ドットファイル既定、chmod 600）。一方で `storage/logs/laravel.log`（中身はスタックトレースとサーバーのパス）、`app/error_log`、`vendor/`、`composer.lock` などは見えていた可能性がある。`laravel.log` と `error_log` は 2026-10-21 に chmod 600 にした。
-- 対応: songofwhisper.com 側に RewriteRule を追加した。2026-10-21 に、`songofwhisper.com/routinemaker-api.yuru-labo.com/app/composer.json` と `.../app/DEPLOY.md`、`songofwhisper.com/catparty.net/` が 403 になり、`songofwhisper.com/` と API のヘルスチェックが 200 のままであることを確認した。恒久対応は `app/` を public_html の外へ移すこと。
+- 対応: songofwhisper.com 側に RewriteRule を追加した。2026-10-21 に、`songofwhisper.com/routinemaker-api.yuru-labo.com/app/composer.json` と `.../app/DEPLOY.md`、`songofwhisper.com/catparty.net/` が 403 になり、`songofwhisper.com/` と API のヘルスチェックが 200 のままであることを確認した。2026-10-21 に、アプリ本体を `mv` で `/home/anwwtear/apps/routinemaker-api` に移した。`public_html/routinemaker-api.yuru-labo.com/app/public` はそこへのシンボリックリンクにした（hample.yuru-labo.com と同じ方式）。移動後、`songofwhisper.com/routinemaker-api.yuru-labo.com/app/composer.json` は 403、API のヘルスチェックは 200、ブラウザでのログインも問題ないことを確認した。
+- 補足: 移動後は、`songofwhisper.com/routinemaker-api.yuru-labo.com/app/public/index.php` が 200 を返すようになった（Laravel の入口に別ホスト名で届く）。リンク先の実体が public_html の外にあるため、songofwhisper.com 側の RewriteRule が適用されないとみられる。届くのは API として公開しているものと同じで、URL は `APP_URL` と `FRONTEND_URL` から作るので Host ヘッダーには依存しない。Cookie のドメインも `.yuru-labo.com` なので送られない。このため Info として許容した。hample.yuru-labo.com も同じ構成。
 
 ### H-2 Google OAuth で state を検証していなかった（High / 修正済み）
 - 場所: `app/Http/Controllers/Auth/GoogleAuthController.php:21,30`
@@ -111,13 +112,13 @@
 
 ## 4. リスク評価
 
-最優先は C-1（秘密情報の漏えい）と C-2（アカウント乗っ取り）。C-2 はコード修正済みだが、本番に反映するまでは悪用できる状態が続く。H-1 は、songofwhisper 側の RewriteRule が効いていることを確認できればリスクが下がる。
+最優先は C-1（秘密情報の漏えい）と C-2（アカウント乗っ取り）。C-2 はコード修正済みだが、本番に反映するまでは悪用できる状態が続く。H-1 は対応済み。
 
 ## 5. 推奨する対策
 
 1. 修正版を本番へデプロイする（C-2、H-2、M-1〜M-3、L-1）。2026-10-21 に完了。
 2. 秘密情報を再発行する（C-1）。2026-10-21 に完了。
-3. `app/` を public_html の外へ移す（H-1）。
+3. `app/` を public_html の外へ移す（H-1）。2026-10-21 に完了。
 4. PHP を ea-php84 に切り替える（8.2 のセキュリティサポートは 2026-12-31 に終了）。2026-10-21 に完了。
 5. 本番 env の設定値を確認する。2026-10-21 に完了（M-4 は該当なし、M-6 は対応済み）。
 6. `.env.docker` をサンプル化する（L-3）。`er` は削除済み。
@@ -142,7 +143,7 @@
 
 ## 7. 未対応項目
 
-- H-1（`app/` の配置）、L-3、L-4
+- L-3、L-4
 - 退会時に他の端末のセッションを失効させる処理（リセット時だけ対応した）
 - パスワードを持たない Google ユーザーの退会時の再認証
 - HTTP セキュリティヘッダー（本番の実際のヘッダーを確認してから判断する）
@@ -157,7 +158,7 @@
    - `MAIL_PASSWORD` など、env にある外部サービスの認証情報。
    - 更新後に `php artisan config:clear`（`config:cache` を使っているなら `config:cache`）を実行する。
 2. **`storage/logs` の確認**: songofwhisper.com 経由で見えていた可能性がある。中にリセット URL や個人情報がないか確認する。
-3. **配置の見直し**: `app/` を public_html の外へ移し、cPanel でドキュメントルートを変更する（mixhost で変更できるかは未確認）。
+3. **配置の見直し**: 2026-10-21 に完了（H-1 を参照）。
 4. **PHP 8.4 への切り替え**: `app/public/.htaccess` のハンドラを ea-php84 に変える。lock 内の全パッケージの PHP 制約は 8.4 を許可している。ローカルの PHP 8.5 でテストは成功した。
 5. **`composer audit --locked` の実行**（外部通信が許可された環境で）。
 6. **バックアップ等の扱い**: 2026-10-21 に削除した（`app.bak_20260214014904/` の中身は cPanel が作った初期の `.htaccess` と空の `.well-known/` だけ。`routinemaker-api-production.env` は `.env` と同じ内容のコピー）。
@@ -197,4 +198,5 @@
 | `SESSION_SECURE_COOKIE=true`、`LOG_LEVEL=warning` | 追加・変更した。Cookie の Secure 属性を確認した |
 | `storage/logs/laravel.log`、`app/error_log` | chmod 600 |
 | PHP | MultiPHP マネージャーで ea-php82 から ea-php84 に切り替え。ヘルスチェック、ログイン、ルーティン一覧を確認した。error_log に `session.gc_divisor must be greater than 0` という起動時の警告が出るが、Web 側の PHP（サーバー既定の設定）によるもので、Laravel は PHP 標準のセッションを使わないので影響はない |
+| 配置の変更 | アプリ本体を `/home/anwwtear/apps/routinemaker-api` に移し、ドキュメントルートをシンボリックリンクにした。最初にコピーで試したところ、コピー先のグループが `nobody` にならず 404 になったのでロールバックした。そのあと `mv` で移し直した |
 | 古いファイルの削除 | `routinemaker-api-production.env`、`~/routinemaker-api.env.bak`、`app.bak_20260214014904/` |

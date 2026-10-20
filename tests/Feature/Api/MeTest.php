@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\UserSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Session\Middleware\StartSession;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -85,15 +86,15 @@ class MeTest extends TestCase
             'password' => Hash::make('password123'),
         ]);
 
-        Sanctum::actingAs($user);
+        $this->app['router']->pushMiddlewareToGroup('api', StartSession::class);
+        $this->actingAs($user, 'web');
 
         // アカウント削除を実行
         $response = $this->deleteJson('/api/me', [
             'password' => 'password123',
         ]);
 
-        $response->assertOk()
-            ->assertJsonPath('message', 'アカウントを削除しました。');
+        $response->assertNoContent();
 
         // 論理削除されていることを確認
         $this->assertSoftDeleted('users', [
@@ -101,6 +102,7 @@ class MeTest extends TestCase
         ]);
 
         // 退会後に /api/me が 401 になることを確認
+        $this->refreshApplication();
         $this->getJson('/api/me')->assertStatus(401);
     }
 

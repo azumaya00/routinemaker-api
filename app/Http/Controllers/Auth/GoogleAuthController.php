@@ -17,8 +17,8 @@ class GoogleAuthController extends Controller
      */
     public function redirect(): RedirectResponse
     {
-        // SPA からのリクエストでセッション state を使わないため stateless を指定
-        return Socialite::driver('google')->stateless()->redirect();
+        // web ミドルウェアのセッションで state を検証する
+        return Socialite::driver('google')->redirect();
     }
 
     /**
@@ -27,7 +27,7 @@ class GoogleAuthController extends Controller
     public function callback(Request $request)
     {
         try {
-            $googleUser = Socialite::driver('google')->stateless()->user();
+            $googleUser = Socialite::driver('google')->user();
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Google認証に失敗しました。もう一度お試しください。',
@@ -85,27 +85,9 @@ class GoogleAuthController extends Controller
                     ], 422);
                 }
 
-                // 退会済みで provider=google の場合のみ復元を許可
-                if ($userByEmail->provider === 'google') {
-                    $userByEmail->restore();
-                    $userByEmail->plan = 'free'; // 初期プランに戻す
-                    $userByEmail->provider = 'google';
-                    $userByEmail->provider_id = $googleId; // GoogleのIDで上書き
-                    $userByEmail->name = $googleName;
-                    $userByEmail->save();
-
-                    Log::info('Google login restore by email', [
-                        'user_id' => $userByEmail->id,
-                        'provider_id' => $googleId,
-                    ]);
-
-                    $user = $userByEmail;
-                } else {
-                    // Google以外の方法で退会したメールは復活させない
-                    return response()->json([
-                        'message' => 'このメールアドレスは別の認証方法で登録されています。',
-                    ], 422);
-                }
+                return response()->json([
+                    'message' => 'このメールアドレスは退会済みです。パスワード再設定から復元してください。',
+                ], 422);
             } else {
                 // C: 該当なしの場合は新規作成
                 $user = User::create([

@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rules\Password as PasswordRule;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class ResetPasswordController extends Controller
 {
@@ -34,22 +36,42 @@ class ResetPasswordController extends Controller
             'password.numbers' => 'パスワードには数字が含まれている必要があります。',
         ]);
 
-        // パスワードリセットを実行
-        $status = Password::reset(
-            $request->only(
-                'email',
-                'password',
-                'password_confirmation',
-                'token'
-            ),
-            function ($user, $password) {
-                $user->password = Hash::make($password);
+        $user = User::where('email', $validated['email'])->first();
+        if ($user) {
+            // 生存ユーザーは通常の broker で検証する
+            $status = Password::reset(
+                $request->only(
+                    'email',
+                    'password',
+                    'password_confirmation',
+                    'token'
+                ),
+                function ($user, $password) {
+                    $user->password = $password;
+                    $user->save();
+                }
+            );
+        } else {
+            $user = User::withTrashed()->onlyTrashed()->where('email', $validated['email'])->first();
+            $tokens = Password::broker()->getRepository();
+            $status = Password::INVALID_TOKEN;
+            if ($user && $tokens->exists($user, $validated['token'])) {
+                $user->restore();
+                $user->password = $validated['password'];
                 $user->save();
+                $tokens->delete($user);
+                $status = Password::PASSWORD_RESET;
             }
-        );
+        }
 
         // リセット成功時
         if ($status === Password::PASSWORD_RESET) {
+            $user->remember_token = Str::random(60);
+            $user->save();
+            $user->tokens()->delete();
+            if (config('session.driver') === 'database') {
+                DB::table('sessions')->where('user_id', $user->id)->delete();
+            }
             return response()->json([
                 'message' => 'パスワードをリセットしました。',
             ]);

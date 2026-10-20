@@ -39,29 +39,24 @@ class RegisteredUserController extends Controller
             ], 422);
         }
 
-        // 削除されたユーザーが存在するかチェック（論理削除されたユーザーも含めて検索）
-        $deletedUser = User::withTrashed()->where('email', $validated['email'])->first();
-        
+        // 削除されたユーザーが存在するかチェック
+        $deletedUser = User::onlyTrashed()->where('email', $validated['email'])->first();
+
         if ($deletedUser) {
-            // 削除されたユーザーを復活させる
-            $deletedUser->restore();
-            
-            // パスワードを新しいものに更新
-            $deletedUser->password = $validated['password'];
-            $deletedUser->save();
-            
-            $user = $deletedUser;
-        } else {
-            // 新規ユーザーを作成
-            // 登録時点ではプロフィール入力をしない前提のため、名前は仮で用意する。
-            // 新規登録時は必ず is_admin=false を保証（外部入力から変更できないようにする）
-            $user = User::create([
-                'name' => strtok($validated['email'], '@') ?: 'User',
-                'email' => $validated['email'],
-                'password' => $validated['password'],
-                'is_admin' => false, // 新規登録時は必ずfalse（念のため明示的に設定）
-            ]);
+            return response()->json([
+                'message' => 'このメールアドレスは退会済みです。パスワード再設定から復元してください。',
+            ], 422);
         }
+
+        // 新規ユーザーを作成
+        // 登録時点ではプロフィール入力をしない前提のため、名前は仮で用意する。
+        // 新規登録時は必ず is_admin=false を保証（外部入力から変更できないようにする）
+        $user = User::create([
+            'name' => strtok($validated['email'], '@') ?: 'User',
+            'email' => $validated['email'],
+            'password' => $validated['password'],
+            'is_admin' => false, // 新規登録時は必ずfalse（念のため明示的に設定）
+        ]);
 
         // SPA の登録直後にログイン済みで扱えるよう、セッションを作成する。
         Auth::login($user);

@@ -93,7 +93,7 @@ class RoutineController extends Controller
         $rules = [
             'title' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:255'],
             'tasks' => [$isUpdate ? 'sometimes' : 'required', 'array'],
-            'tasks.*' => ['string'],
+            'tasks.*' => ['string', 'max:255'],
         ];
 
         $validator = Validator::make($request->all(), $rules);

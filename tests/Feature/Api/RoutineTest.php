@@ -11,6 +11,17 @@ class RoutineTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_task_longer_than_255_characters_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/routines', [
+            'title' => 'Test Routine',
+            'tasks' => [str_repeat('a', 256)],
+        ])->assertStatus(422);
+    }
+
     public function test_free_plan_rejects_more_than_ten_tasks(): void
     {
         $user = User::factory()->create(['plan' => 'free']);

@@ -14,6 +14,7 @@ Route::options('/logout', fn () => response()->noContent());
 Route::options('/register', fn () => response()->noContent());
 
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])
+    ->middleware('throttle:10,1')
     ->name('login');
 
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
@@ -22,10 +23,11 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 
 // SPA 向けの最小登録。登録後はセッションを作ってそのまま認証済みにする。
 Route::post('/register', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'store'])
+    ->middleware('throttle:10,1')
     ->name('register');
 
 // Google ログイン（Socialite）: SPA からのリダイレクト経由で実行する。
 Route::prefix('api/auth/google')->group(function () {
-    Route::get('/redirect', [GoogleAuthController::class, 'redirect']);
-    Route::get('/callback', [GoogleAuthController::class, 'callback']);
+    Route::get('/redirect', [GoogleAuthController::class, 'redirect'])->middleware('throttle:10,1');
+    Route::get('/callback', [GoogleAuthController::class, 'callback'])->middleware('throttle:10,1');
 });

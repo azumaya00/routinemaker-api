@@ -17,8 +17,8 @@ Route::get('/health', function () {
 });
 
 // パスワードリセット（認証不要）
-Route::post('/forgot-password', [ForgotPasswordController::class, 'store']);
-Route::post('/reset-password', [ResetPasswordController::class, 'store']);
+Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])->middleware('throttle:5,1');
+Route::post('/reset-password', [ResetPasswordController::class, 'store'])->middleware('throttle:5,1');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', MeController::class);

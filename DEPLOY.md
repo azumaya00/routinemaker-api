@@ -10,7 +10,7 @@
 | アプリ | `/home/anwwtear/public_html/routinemaker-api.yuru-labo.com/app`（GitHub の public リポジトリを HTTPS で clone したもの） |
 | ドキュメントルート | `app/public` |
 | PHP | Web は `app/public/.htaccess` で指定（現在 ea-php82）、CLI は 8.4 |
-| composer | `/opt/cpanel/composer/bin/composer` |
+| composer | `composer`（`/usr/local/bin/composer`） |
 
 サーバー上で変更していて、Git にはないもの（消さないこと）:
 - `public/.htaccess`：PHP ハンドラの指定を追記している
@@ -54,7 +54,7 @@ git pull --ff-only
 2-4. 依存関係を入れる。
 
 ```bash
-/opt/cpanel/composer/bin/composer install --no-dev --optimize-autoloader --no-interaction
+composer install --no-dev --optimize-autoloader --no-interaction
 ```
 
 2-5. マイグレーションを実行する（マイグレーションが追加されたときだけ）。
@@ -89,7 +89,7 @@ cd /home/anwwtear/public_html/routinemaker-api.yuru-labo.com/app && git checkout
 ```
 
 ```bash
-/opt/cpanel/composer/bin/composer install --no-dev --optimize-autoloader --no-interaction && php artisan config:cache
+composer install --no-dev --optimize-autoloader --no-interaction && php artisan config:cache
 ```
 
 - マイグレーションを実行していた場合、`migrate:rollback` はデータが消えることがあるので、実行する前に内容を確認してください。

@@ -9,7 +9,7 @@
 |---|---|---|
 | フレームワーク | Laravel 12.45.0（composer.lock） | 確認済み |
 | 認証 | Sanctum 4.2.2（SPA の Cookie セッション）、Socialite 5.24.1（Google ログイン） | 確認済み |
-| PHP | composer.json は `^8.2`。本番は ea-php82（`app/public/.htaccess` で指定） | 本番の値は引き継ぎ情報による |
+| PHP | composer.json は `^8.2`。本番は ea-php84（2026-10-21 に ea-php82 から切り替え） | サーバーで確認済み |
 | DB | 本番は MySQL、テストは sqlite（in-memory） | 確認済み |
 | フロント | Next.js（Vercel）。`https://routinemaker.yuru-labo.com` | 確認済み |
 | API | `https://routinemaker-api.yuru-labo.com`（mixhost 共用サーバー、LiteSpeed） | 引き継ぎ情報による |
@@ -118,7 +118,7 @@
 1. 修正版を本番へデプロイする（C-2、H-2、M-1〜M-3、L-1）。2026-10-21 に完了。
 2. 秘密情報を再発行する（C-1）。2026-10-21 に完了。
 3. `app/` を public_html の外へ移す（H-1）。
-4. PHP を ea-php84 に切り替える（8.2 のセキュリティサポートは 2026-12-31 に終了）。
+4. PHP を ea-php84 に切り替える（8.2 のセキュリティサポートは 2026-12-31 に終了）。2026-10-21 に完了。
 5. 本番 env の設定値を確認する。2026-10-21 に完了（M-4 は該当なし、M-6 は対応済み）。
 6. `.env.docker` をサンプル化する（L-3）。`er` は削除済み。
 
@@ -160,7 +160,7 @@
 3. **配置の見直し**: `app/` を public_html の外へ移し、cPanel でドキュメントルートを変更する（mixhost で変更できるかは未確認）。
 4. **PHP 8.4 への切り替え**: `app/public/.htaccess` のハンドラを ea-php84 に変える。lock 内の全パッケージの PHP 制約は 8.4 を許可している。ローカルの PHP 8.5 でテストは成功した。
 5. **`composer audit --locked` の実行**（外部通信が許可された環境で）。
-6. **バックアップ等の扱い**: `app.bak_20260214014904/` と `routinemaker-api-production.env` をどうするか決める。
+6. **バックアップ等の扱い**: 2026-10-21 に削除した（`app.bak_20260214014904/` の中身は cPanel が作った初期の `.htaccess` と空の `.well-known/` だけ。`routinemaker-api-production.env` は `.env` と同じ内容のコピー）。
 7. **Google Cloud Console**: リダイレクト URI が本番のコールバック URL だけになっているか確認する。
 
 ## 9. 実施した検証と結果
@@ -196,3 +196,5 @@
 | `APP_KEY` | `key:generate --force` で再生成。全ユーザーが一度ログアウトされた。再ログインを確認した |
 | `SESSION_SECURE_COOKIE=true`、`LOG_LEVEL=warning` | 追加・変更した。Cookie の Secure 属性を確認した |
 | `storage/logs/laravel.log`、`app/error_log` | chmod 600 |
+| PHP | MultiPHP マネージャーで ea-php82 から ea-php84 に切り替え。ヘルスチェック、ログイン、ルーティン一覧を確認した。error_log に `session.gc_divisor must be greater than 0` という起動時の警告が出るが、Web 側の PHP（サーバー既定の設定）によるもので、Laravel は PHP 標準のセッションを使わないので影響はない |
+| 古いファイルの削除 | `routinemaker-api-production.env`、`~/routinemaker-api.env.bak`、`app.bak_20260214014904/` |

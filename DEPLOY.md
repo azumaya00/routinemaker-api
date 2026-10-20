@@ -9,7 +9,7 @@
 | サーバー | mixhost（cPanel / LiteSpeed）、ホームは `/home/anwwtear` |
 | アプリ | `/home/anwwtear/public_html/routinemaker-api.yuru-labo.com/app`（GitHub の public リポジトリを HTTPS で clone したもの） |
 | ドキュメントルート | `app/public` |
-| PHP | Web は `app/public/.htaccess` で指定（現在 ea-php82）、CLI は 8.4 |
+| PHP | Web は ea-php84（cPanel の MultiPHP マネージャーで設定し、`app/public/.htaccess` に反映される）、CLI も 8.4 |
 | composer | `composer`（`/usr/local/bin/composer`） |
 
 サーバー上で変更していて、Git にはないもの（消さないこと）:
@@ -107,7 +107,7 @@ cd /home/anwwtear/public_html/routinemaker-api.yuru-labo.com/app && chmod 600 .e
 
 ## 6. PHP のバージョンを変えるとき
 
-`public/.htaccess` の PHP ハンドラ指定（例: `ea-php82`）を `ea-php84` に書き換えます。動かなければ元に戻します。Actions では 8.2 と 8.4 の両方でテストしています。
+cPanel の「MultiPHP マネージャー」で、`routinemaker-api.yuru-labo.com` の 1 行だけにチェックを入れてバージョンを選びます（他のドメインにチェックを入れないこと）。`public/.htaccess` の cPanel-generated handler ブロックが書き換わります。このブロックは手で編集しないでください。動かなければ元のバージョンに戻します。バージョンを上げる前に、`.github/workflows/tests.yml` の matrix に新しいバージョンを追加してテストを通しておきます。
 
 ## 任意: mode change を表示しないようにする
 

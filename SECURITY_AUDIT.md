@@ -31,11 +31,11 @@
 
 ## 3. 発見した問題
 
-### C-1 本番 env ファイルが外部から取得できた（Critical / サーバー）
+### C-1 本番 env ファイルが外部から取得できた（Critical / 対応済み）
 - 内容: `app/routinemaker-api-production.env`（サーバー上で `scp` を実行した結果できた `.env` のコピーとみられる）が songofwhisper.com 経由で HTTP 200 で取得できた（2026-02-14 頃から 2026-10-21 まで）。
 - 根拠: 引き継ぎ情報（songofwhisper.com の監査中に発覚）。アクセスログに取得の記録はないが、ログの保持期間外の取得は否定できない。
 - 影響: DB 接続情報、APP_KEY、Google OAuth のシークレット、メールの認証情報などが漏えいした可能性がある。APP_KEY が漏れると、暗号化 Cookie を偽造される恐れがある。
-- 対応: chmod 600 で 403 にした（応急処置済み）。秘密情報の再発行が必要（8 章）。
+- 対応: chmod 600 で 403 にした。2026-10-21 に `GOOGLE_CLIENT_SECRET`、`MAIL_PASSWORD`（noreply@yuru-labo.com）、`DB_PASSWORD`（anwwtear_moto）、`APP_KEY` を再発行した（対応済み）。REDIS と AWS の値は空だったので対象外。
 
 ### C-2 退会済みアカウントを、登録 API からメールアドレスだけで復元できた（Critical / 修正済み）
 - 場所: `app/Http/Controllers/Auth/RegisteredUserController.php`（修正前の 42〜53 行）
@@ -45,7 +45,7 @@
 
 ### H-1 `app/` が public_html の中にある（High / 未対応）
 - 内容: ドキュメントルートは `app/public` だが、`app/` 自体が public_html の中にある。songofwhisper.com のホスト経由で `app/` 配下のファイルに届く。
-- 影響: `.env` 系は 403（ドットファイル既定、chmod 600）。一方で `storage/logs/laravel.log` や `vendor/`、`composer.lock` などは見えていた可能性がある。
+- 影響: `.env` 系は 403（ドットファイル既定、chmod 600）。一方で `storage/logs/laravel.log`（中身はスタックトレースとサーバーのパス）、`app/error_log`、`vendor/`、`composer.lock` などは見えていた可能性がある。`laravel.log` と `error_log` は 2026-10-21 に chmod 600 にした。
 - 対応: songofwhisper.com 側に RewriteRule を追加済み（デプロイ後の確認待ち）。恒久対応は `app/` を public_html の外へ移すこと。
 
 ### H-2 Google OAuth で state を検証していなかった（High / 修正済み）
@@ -65,18 +65,22 @@
 - 場所: `app/Http/Controllers/Auth/ResetPasswordController.php`
 - 影響: セッションを盗まれていた場合、パスワードを変えてもアクセスが続く。
 
-### M-4 本番の `MAIL_MAILER=log` だと、リセット URL がログに残る（Medium・条件付き / 未確認）
+### M-4 本番の `MAIL_MAILER=log` だと、リセット URL がログに残る（該当なし）
 - 場所: `config/mail.php:17`（既定値が `log`）
-- 本番 env の値は未確認。H-1 と重なると、ログ経由でリセット URL が漏れる。
+- 本番の値を確認したところ `MAIL_MAILER=smtp` だったので、該当しない。
 
-### M-5 Cookie ドメインを共有している（Medium・条件付き / 未確認）
+### M-5 Cookie ドメインを共有している（Medium / 仕様として許容）
 - `ENV_MATRIX.md` では本番の `SESSION_DOMAIN=.yuru-labo.com` を推奨している。同じサーバーにある `yuru-labo.com` と `hample.yuru-labo.com` にも、routinemaker のセッション Cookie と XSRF-TOKEN が送られる。
-- 悪用条件: どちらかのサイトが侵害されること。本番の値は未確認。
+- 悪用条件: どちらかのサイトが侵害されること。本番は `SESSION_DOMAIN=.yuru-labo.com`。フロントが XSRF-TOKEN を読むには、API と共通の親ドメインが必要なので、これより狭くできない。同じドメインのサイトはどれも自分で管理しているので、許容した。
+
+### M-6 Cookie に Secure 属性が付いていなかった（Medium / 対応済み）
+- 内容: 本番 `.env` に `SESSION_SECURE_COOKIE` がなく、セッション Cookie に Secure 属性が付いていなかった。
+- 対応: 2026-10-21 に `SESSION_SECURE_COOKIE=true` を追加し、ブラウザで Secure 属性が付くことを確認した。あわせて `LOG_LEVEL` を `debug` から `warning` に変えた。
 
 ### L-1 タスク文字列に長さの上限がなかった（Low / 修正済み）
 - 場所: `app/Http/Controllers/Api/RoutineController.php:96`
 
-### L-2 tinker の出力ファイル `er` がコミットされている（Low / 未対応）
+### L-2 tinker の出力ファイル `er` がコミットされていた（Low / 対応済み・履歴には残る）
 - 内容: ローカル開発用ユーザー（`you@example.com`）の bcrypt ハッシュ。本番に同じアカウントがなければ実害はない。
 
 ### L-3 `.env.docker` を Git で追跡している（Low / 未対応）
@@ -99,7 +103,6 @@
 - ファイルアップロード、GitHub Actions、Astro / Gatsby の項目。
 
 ### Unverified
-- 本番の `APP_DEBUG`、`APP_ENV`、`SESSION_*`、`MAIL_MAILER`、`CORS_ALLOWED_ORIGINS`、`SANCTUM_STATEFUL_DOMAINS`
 - 本番の HTTP セキュリティヘッダー
 - `composer audit --locked` の結果
 - DB ユーザーの権限と、外部からの接続可否
@@ -112,12 +115,12 @@
 
 ## 5. 推奨する対策
 
-1. 修正版を本番へデプロイする（C-2、H-2、M-1〜M-3、L-1）。
-2. 秘密情報を再発行する（C-1）。
+1. 修正版を本番へデプロイする（C-2、H-2、M-1〜M-3、L-1）。2026-10-21 に完了。
+2. 秘密情報を再発行する（C-1）。2026-10-21 に完了。
 3. `app/` を public_html の外へ移す（H-1）。
 4. PHP を ea-php84 に切り替える（8.2 のセキュリティサポートは 2026-12-31 に終了）。
-5. 本番 env の設定値を確認する（M-4、M-5、Unverified の項目）。
-6. `er` を削除し、`.env.docker` をサンプル化する（L-2、L-3）。
+5. 本番 env の設定値を確認する。2026-10-21 に完了（M-4 は該当なし、M-6 は対応済み）。
+6. `.env.docker` をサンプル化する（L-3）。`er` は削除済み。
 
 ## 6. 修正済み項目（未コミット）
 
@@ -139,7 +142,7 @@
 
 ## 7. 未対応項目
 
-- H-1（`app/` の配置）、M-4、M-5、L-2、L-3、L-4
+- H-1（`app/` の配置）、L-3、L-4
 - 退会時に他の端末のセッションを失効させる処理（リセット時だけ対応した）
 - パスワードを持たない Google ユーザーの退会時の再認証
 - HTTP セキュリティヘッダー（本番の実際のヘッダーを確認してから判断する）
@@ -180,3 +183,16 @@
 - 本番では `APP_DEBUG=false` を維持し、`MAIL_MAILER` は配送用のものにする。
 - `storage/logs` の保持期間と、中身に秘密情報が入っていないか。
 - public リポジトリに、env、tinker 出力、ダンプをコミットしない。
+
+## 11. 対応記録（2026-10-21）
+
+| 対応 | 結果 |
+|---|---|
+| コード修正のデプロイ（`e1a328d`） | `git pull --ff-only` と `config:cache` を実行。ヘルスチェック、メールと Google でのログイン、ルーティン一覧を確認した |
+| GitHub Actions `tests` | PHP 8.2 / 8.4 で成功 |
+| `GOOGLE_CLIENT_SECRET` | 新しいシークレットを追加して差し替え、旧シークレットを削除。Google ログインを確認した |
+| `MAIL_PASSWORD` | cPanel でパスワードを変更。リセットメールが届くことを確認した |
+| `DB_PASSWORD` | `anwwtear_moto`（routinemaker の DB 専用）のパスワードを変更。`migrate:status` とブラウザで確認した |
+| `APP_KEY` | `key:generate --force` で再生成。全ユーザーが一度ログアウトされた。再ログインを確認した |
+| `SESSION_SECURE_COOKIE=true`、`LOG_LEVEL=warning` | 追加・変更した。Cookie の Secure 属性を確認した |
+| `storage/logs/laravel.log`、`app/error_log` | chmod 600 |

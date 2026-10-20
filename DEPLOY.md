@@ -51,6 +51,14 @@ git rev-parse HEAD > ~/routinemaker-api.prev && cat ~/routinemaker-api.prev
 git pull --ff-only
 ```
 
+2-3b. `public/` 配下の権限を直す。このサーバーのシェルは umask 077 なので、`git pull` で書き直されたファイルは 600 になる。`public/.htaccess` が 600 だと Web サーバーが読めず、すべてのリクエストが 404 になる。
+
+```bash
+chmod 644 public/.htaccess && find public -type f ! -perm -o=r -ls
+```
+
+2 つ目のコマンドで何か表示されたら、そのファイルも `chmod 644` する。
+
 2-4. 依存関係を入れる。
 
 ```bash
@@ -120,4 +128,6 @@ git config core.fileMode false
 ## .htaccess について
 
 - `public/.htaccess` は、Laravel の標準の内容と cPanel の handler ブロック（ea-php84）だけにしている。サーバー上の内容と一致させているので、`git status` に出ないのが正常。
-- 2026-10-21 に、ホスト名の制限（`R=404`）、HTTPS への転送、セキュリティヘッダーを追加したところ、本番ですべてのリクエストが 404 になったので取り消した（原因は未特定。同じ書き方の hample では動いている）。LiteSpeed は `.htaccess` の変更をすぐに反映しないことがあるので、`.htaccess` を変えるときは、反映を確認するまで旧ファイルを退避しておくこと。
+- 2026-10-21 に、ホスト名の制限、HTTPS への転送、セキュリティヘッダーを追加したところ、本番ですべてのリクエストが 404 になったので取り消した。原因は内容ではなく、`git pull` で `.htaccess` が 600 になり、Web サーバーが読めなかったこと（手順 2-3b）。
+- LiteSpeed は `.htaccess` の変更をすぐに反映しないことがある。`.htaccess` を変えるときは、`cp -p` で旧ファイルを退避してから行う。
+- HTTP から HTTPS への転送は、cPanel の「ドメイン」で「Force HTTPS Redirect」をオンにして実現している（2026-10-21）。

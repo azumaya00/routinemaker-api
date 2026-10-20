@@ -199,5 +199,5 @@
 | PHP | MultiPHP マネージャーで ea-php82 から ea-php84 に切り替え。ヘルスチェック、ログイン、ルーティン一覧を確認した。error_log に `session.gc_divisor must be greater than 0` という起動時の警告が出るが、Web 側の PHP（サーバー既定の設定）によるもので、Laravel は PHP 標準のセッションを使わないので影響はない |
 | 古いファイルの削除 | `routinemaker-api-production.env`、`~/routinemaker-api.env.bak`、`app.bak_20260214014904/` |
 | hample からの引き継ぎ | Cookie の親ドメイン（`.yuru-labo.com`）は、フロントが `document.cookie` で XSRF-TOKEN を読むために必要なので、M-5 は許容のまま。他のサブドメインからは CORS と Sanctum の stateful 判定で API を使えない。APP_NAME は英数字を含み、Cookie 名の衝突はない |
-| `.htaccess` の強化（取り消し） | ホスト名の制限（`R=404`）、HTTPS への転送、HSTS などのヘッダーを追加して反映したところ、LiteSpeed が設定を読み直した時点で、すべてのリクエストが 404 になった。退避しておいた `.htaccess` に戻して復旧し、リポジトリも元の内容に戻した。原因は未特定（同じ書き方の hample では動いている）。http は 200 のままで HSTS もないが、Cookie は Secure なので http では送られない |
-| 配置の変更（取り消し） | `mv` とシンボリックリンクで public_html の外へ移したが、動いて見えたのは LiteSpeed が古い設定を使っていたためと判明し、`.htaccess` の件の切り分けのため元の場所に戻した。シンボリックリンクの構成が実際に動くかは確認できていない |
+| `.htaccess` の強化（取り消し） | ホスト名の制限、HTTPS への転送、HSTS などのヘッダーを追加して反映したところ、すべてのリクエストが 404 になった。原因は内容ではなく、サーバーのシェルの umask が 077 のため `git pull` で `public/.htaccess` が 600 になり、Web サーバー（nobody）が読めなかったこと。`chmod 644` で復旧した。リポジトリの `.htaccess` は元の内容に戻したまま。HTTPS への転送は cPanel の「Force HTTPS Redirect」で有効にした（http は 301）。HSTS などのヘッダーは未設定 |
+| 配置の変更（取り消し） | `mv` とシンボリックリンクで public_html の外へ移したが、上の 404 の原因を切り分ける過程で元の場所に戻した。404 の原因は権限だったので、シンボリックリンクの構成は動いていた可能性が高いが、再度は試していない |

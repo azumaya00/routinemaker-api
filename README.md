@@ -20,6 +20,7 @@ Laravel API-only backend for Routine Maker.
 Ports are offset to avoid conflicts with the work Docker setup.
 Database container uses MariaDB 10.11 (LTS).
 
+- `cp .env.docker.example .env.docker` (set your own DB passwords; `.env.docker` is not tracked)
 - `docker compose --env-file .env.docker up -d`
 - `docker compose --env-file .env.docker exec api php artisan migrate`
 - `docker compose --env-file .env.docker exec api php artisan test`

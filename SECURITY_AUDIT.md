@@ -43,10 +43,10 @@
 - 悪用条件: 退会済みユーザーのメールアドレスを知っていること。メールの受信は不要。旧データ、プラン、`is_admin` をそのまま引き継げる。
 - 補足: リポジトリが public なので、この挙動は誰でも読める状態だった。
 
-### H-1 `app/` が public_html の中にある（High / 未対応）
+### H-1 `app/` が public_html の中にある（High / 緩和済み・恒久対応は未対応）
 - 内容: ドキュメントルートは `app/public` だが、`app/` 自体が public_html の中にある。songofwhisper.com のホスト経由で `app/` 配下のファイルに届く。
 - 影響: `.env` 系は 403（ドットファイル既定、chmod 600）。一方で `storage/logs/laravel.log`（中身はスタックトレースとサーバーのパス）、`app/error_log`、`vendor/`、`composer.lock` などは見えていた可能性がある。`laravel.log` と `error_log` は 2026-10-21 に chmod 600 にした。
-- 対応: songofwhisper.com 側に RewriteRule を追加済み（デプロイ後の確認待ち）。恒久対応は `app/` を public_html の外へ移すこと。
+- 対応: songofwhisper.com 側に RewriteRule を追加した。2026-10-21 に、`songofwhisper.com/routinemaker-api.yuru-labo.com/app/composer.json` と `.../app/DEPLOY.md`、`songofwhisper.com/catparty.net/` が 403 になり、`songofwhisper.com/` と API のヘルスチェックが 200 のままであることを確認した。恒久対応は `app/` を public_html の外へ移すこと。
 
 ### H-2 Google OAuth で state を検証していなかった（High / 修正済み）
 - 場所: `app/Http/Controllers/Auth/GoogleAuthController.php:21,30`
